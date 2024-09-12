@@ -1,0 +1,68 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage protectedLocalStorage
+
+<PageTitle>Home</PageTitle>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Save in Local Storage</button>
+<br />
+<br
+<button class="btn btn-primary" @onclick="ReadToken">Read from Local Storage</button>
+
+@code {
+  
+    private List<TokenInfo> _tokenInfoList = new List<TokenInfo>
+    {
+        new TokenInfo
+        {
+            Name = "ClientToken",
+            Value = "96a43cb3e63f49eda9784dbc208b65e0",
+            ExpiryDate = new DateTime(2024, 9, 6, 7, 56, 4, 997)
+        },
+        new TokenInfo
+        {
+            Name = "ShopperToken",
+            Value = "16a918ba4aed4bf1b53b8f49d53cb6da",
+            ExpiryDate = new DateTime(2024, 9, 6, 7, 56, 4, 997)
+        },
+        new TokenInfo
+        {
+            Name = "AccountId",
+            Value = "4707",
+            ExpiryDate = null // No expiry for AccountId
+        },
+        new TokenInfo
+        {
+            Name = "ShopperId",
+            Value = "2829",
+            ExpiryDate = null // No expiry for ShopperId
+        }
+    };
+    private async Task IncrementCount()
+    {
+        // Store the entire list in ProtectedLocalStorage
+        await protectedLocalStorage.SetAsync("tokenInfoList", _tokenInfoList);
+    }
+    private async Task ReadToken()
+    {
+        var result = await protectedLocalStorage.GetAsync<List<TokenInfo>>("tokenInfoList");
+        if (result.Success)
+        {
+            _tokenInfoList = result.Value;
+
+            // You can now access individual items in the list
+            var clientToken = _tokenInfoList.FirstOrDefault(t => t.Name == "ClientToken");
+            var shopperToken = _tokenInfoList.FirstOrDefault(t => t.Name == "ShopperToken");
+            var accountId = _tokenInfoList.FirstOrDefault(t => t.Name == "AccountId");
+            var shopperId = _tokenInfoList.FirstOrDefault(t => t.Name == "ShopperId");
+        }
+    }
+    public class TokenInfo
+    {
+        public string Name { get; set; } // Client Token, Shopper Token, etc.
+        public string Value { get; set; } // Token value (string)
+        public DateTime? ExpiryDate { get; set; } // Nullable for tokens without expiry (Account Id, Shopper Id)
+    }
+
+}
