@@ -56,7 +56,20 @@
             var shopperToken = _tokenInfoList.FirstOrDefault(t => t.Name == "ShopperToken");
             var accountId = _tokenInfoList.FirstOrDefault(t => t.Name == "AccountId");
             var shopperId = _tokenInfoList.FirstOrDefault(t => t.Name == "ShopperId");
+
+            // Update ClientToken and save in localStorage
+            if (clientToken != null && clientToken.Value == "1234")
+            {
+                // Update ClientToken value
+                clientToken.Value = "5678";
+
+                // Save updated token list back to localStorage
+                await protectedLocalStorage.SetAsync("tokenInfoList", _tokenInfoList);
+            }
+
         }
+       
+
     }
     public class TokenInfo
     {
