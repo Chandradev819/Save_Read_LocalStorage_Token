@@ -1,9 +1,16 @@
-﻿namespace LocalStorageDemo
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace LocalStorageDemo
 {
     public class TokenInfo
     {
-        public string Name { get; set; } // Client Token, Shopper Token, etc.
-        public string Value { get; set; } // Token value (string)
-        public DateTime? ExpiryDate { get; set; } // Nullable for tokens without expiry (Account Id, Shopper Id)
+        [System.ComponentModel.DataAnnotations.Key]
+        public long Id { get; set; }
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public string Value { get; set; }
+        [Required]
+        public DateTime? ExpiryDate { get; set; } 
     }
 }

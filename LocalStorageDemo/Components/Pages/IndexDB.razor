@@ -1,0 +1,145 @@
+﻿@page "/tokens"
+@using Blazor.IndexedDB
+@using System.ComponentModel.DataAnnotations
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using LocalStorageDemo.Model
+@inject IIndexedDbFactory DbFactory
+
+<h3>Token Management</h3>
+
+<EditForm Model="newToken" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Name:</label>
+        <InputText @bind-Value="newToken.Name" class="form-control" />
+        <ValidationMessage For="@(() => newToken.Name)" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Value:</label>
+        <InputText @bind-Value="newToken.Value" class="form-control" />
+        <ValidationMessage For="@(() => newToken.Value)" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Expiry Date:</label>
+        <InputDate @bind-Value="newToken.ExpiryDate" class="form-control" />
+        <ValidationMessage For="@(() => newToken.ExpiryDate)" class="text-danger" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        @((editToken != null) ? "Update Token" : "Add Token")
+    </button>
+
+    @if (editToken != null)
+    {
+        <button type="button" class="btn btn-secondary ml-2" @onclick="CancelEdit">Cancel</button>
+    }
+</EditForm>
+
+<h4 class="mt-4">Token List</h4>
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Value</th>
+            <th>Expiry Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var token in tokens)
+        {
+            <tr>
+                <td>@token.Name</td>
+                <td>@token.Value</td>
+                <td>@token.ExpiryDate?.ToString("yyyy-MM-dd")</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" @onclick="() => EditToken(token)">Edit</button>
+                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteToken(token)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<TokenInfo> tokens = new List<TokenInfo>();
+    private TokenInfo newToken = new TokenInfo();
+    private TokenInfo editToken;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTokens();
+    }
+
+    private async Task LoadTokens()
+    {
+        using (var db = await DbFactory.Create<TokenDB>())
+        {
+            tokens = db.tblTokens.ToList();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (editToken != null)
+        {
+            // Update Existing Token
+            using (var db = await DbFactory.Create<TokenDB>())
+            {
+                var tokenToUpdate = db.tblTokens.First(t => t.Name == editToken.Name);
+                tokenToUpdate.Value = newToken.Value;
+                tokenToUpdate.ExpiryDate = newToken.ExpiryDate;
+                await db.SaveChanges();
+            }
+            editToken = null; // Reset after updating
+        }
+        else
+        {
+            // Add New Token
+            using (var db = await DbFactory.Create<TokenDB>())
+            {
+                db.tblTokens.Add(new TokenInfo
+                    {
+                        Name = newToken.Name,
+                        Value = newToken.Value,
+                        ExpiryDate = newToken.ExpiryDate
+                    });
+                await db.SaveChanges();
+            }
+        }
+
+        newToken = new TokenInfo(); // Reset the form
+        await LoadTokens(); // Refresh the list
+    }
+
+    private void EditToken(TokenInfo token)
+    {
+        editToken = token;
+        newToken = new TokenInfo
+            {
+                Name = token.Name,
+                Value = token.Value,
+                ExpiryDate = token.ExpiryDate
+            };
+    }
+
+    private void CancelEdit()
+    {
+        editToken = null;
+        newToken = new TokenInfo(); // Reset form
+    }
+
+    private async Task DeleteToken(TokenInfo token)
+    {
+        using (var db = await DbFactory.Create<TokenDB>())
+        {
+            db.tblTokens.Remove(token);
+            await db.SaveChanges();
+        }
+        await LoadTokens(); // Refresh the list
+    }
+}
